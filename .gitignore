@@ -1,0 +1,37 @@
+# ──────────────────────────────────
+#  Greta Cliente — .gitignore
+# ──────────────────────────────────
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+ENV/
+
+# Backups del updater
+*.bak
+*.bak2
+
+# Logs
+*.log
+
+# IDE / Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Windows
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# Archivos de configuracion local (contienen API keys)
+config_local.json
