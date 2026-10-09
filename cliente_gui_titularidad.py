@@ -401,13 +401,16 @@ class App(tk.Tk):
         self.txt_resultado.pack(fill="both", expand=True)
 
         # Tags del resultado
-        self.txt_resultado.tag_config("HEAD",  foreground=C["tag_head"],  font=("Consolas", 10, "bold"))
-        self.txt_resultado.tag_config("FIELD", foreground=C["accent"],    font=("Consolas", 9))
-        self.txt_resultado.tag_config("VALUE", foreground=C["text"])
-        self.txt_resultado.tag_config("OK",    foreground=C["success"],   font=("Consolas", 10, "bold"))
-        self.txt_resultado.tag_config("ERR",   foreground=C["error"],     font=("Consolas", 10, "bold"))
-        self.txt_resultado.tag_config("DIM",   foreground=C["text_dim"])
-        self.txt_resultado.tag_config("SEP",   foreground=C["border2"])
+        self.txt_resultado.tag_config("HEAD",   foreground=C["tag_head"],  font=("Consolas", 10, "bold"))
+        self.txt_resultado.tag_config("FIELD",  foreground=C["accent"],    font=("Consolas", 9))
+        self.txt_resultado.tag_config("VALUE",  foreground=C["text"])
+        self.txt_resultado.tag_config("OK",     foreground=C["success"],   font=("Consolas", 10, "bold"))
+        self.txt_resultado.tag_config("ERR",    foreground=C["error"],     font=("Consolas", 10, "bold"))
+        self.txt_resultado.tag_config("DIM",    foreground=C["text_dim"])
+        self.txt_resultado.tag_config("SEP",    foreground=C["border2"])
+        self.txt_resultado.tag_config("ACTIVE", foreground=C["success"],   font=("Consolas", 9, "bold"))
+        self.txt_resultado.tag_config("INACT",  foreground=C["warning"],   font=("Consolas", 9, "bold"))
+        self.txt_resultado.tag_config("NUM",    foreground=C["accent2"],   font=("Consolas", 10, "bold"))
 
         # ── Log de actividad (derecha) ──
         log_outer = tk.Frame(container, bg=C["bg_panel"])
@@ -642,7 +645,7 @@ class App(tk.Tk):
         ]
 
         for titulo, campos in secciones:
-            # Filtrar campos vacíos
+            # Filtrar campos vacios
             campos_val = [(k, v) for k, v in campos if v]
             if not campos_val:
                 continue
@@ -651,10 +654,54 @@ class App(tk.Tk):
                 self.txt_resultado.insert("end", f"    {campo:<22}", "FIELD")
                 self.txt_resultado.insert("end", f"{valor}\n", "VALUE")
 
-        self.txt_resultado.insert("end", "\n  " + "─" * 52 + "\n", "SEP")
+        # ── Seccion Lineas / Suscripciones ─────────────────────────────────────────
+        lineas       = r.get("lineas", [])
+        total_lineas = r.get("total_lineas", len(lineas))
+
+        encabezado_lineas = (
+            f"  \U0001f4f1  L\u00cdNEAS / SUSCRIPCIONES  ({total_lineas} encontrada{'s' if total_lineas != 1 else ''})"
+        )
+        self.txt_resultado.insert("end", f"\n{encabezado_lineas}\n", "HEAD")
+
+        if not lineas:
+            self.txt_resultado.insert("end", "    Sin suscripciones registradas.\n", "DIM")
+        else:
+            for i, linea in enumerate(lineas, 1):
+                numero_l   = linea.get("numero", "").strip()
+                estado_l   = linea.get("estado", "").strip()
+                producto_l = linea.get("tipo_producto", "").strip()
+                pago_l     = linea.get("tipo_pago", "").strip()
+                servicio_l = linea.get("tipo_servicio", "").strip()
+                fecha_l    = linea.get("fecha_activacion", "").strip()
+
+                # Separador entre lineas
+                self.txt_resultado.insert("end", "    " + "·" * 46 + "\n", "SEP")
+
+                # Numero de linea con formato destacado
+                num_display = numero_l if numero_l else f"Linea {i}"
+                self.txt_resultado.insert("end", f"    {i}. ", "FIELD")
+                self.txt_resultado.insert("end", f"{num_display}\n", "NUM")
+
+                # Estado con color segun valor
+                estado_tag = "ACTIVE" if "activ" in estado_l.lower() else "INACT"
+                self.txt_resultado.insert("end", f"    {'Estado':<22}", "FIELD")
+                self.txt_resultado.insert("end", f"{estado_l}\n", estado_tag)
+
+                # Resto de campos (solo mostrar si tienen valor)
+                for campo, valor in [
+                    ("Tipo servicio",  servicio_l),
+                    ("Tipo producto",  producto_l),
+                    ("Tipo pago",      pago_l),
+                    ("Fecha activaci\u00f3n", fecha_l),
+                ]:
+                    if valor:
+                        self.txt_resultado.insert("end", f"    {campo:<22}", "FIELD")
+                        self.txt_resultado.insert("end", f"{valor}\n", "VALUE")
+
+        self.txt_resultado.insert("end", "\n  " + "\u2500" * 52 + "\n", "SEP")
         self.txt_resultado.insert(
             "end",
-            f"  Job ID: {resultado.get('job_id','')[:8]}  ·  "
+            f"  Job ID: {resultado.get('job_id','')[:8]}  \u00b7  "
             f"Tiempo total: {elapsed}s\n",
             "DIM"
         )
