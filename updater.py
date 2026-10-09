@@ -63,16 +63,45 @@ def set_version_local(version: str):
 
 def get_latest_release() -> dict | None:
     """
-    Consulta la API de GitHub para obtener el ultimo release.
-    Retorna el JSON de la respuesta o None si falla.
+    Consulta la API de GitHub para obtener el ultimo release, tag o version.
+    Retorna un diccionario con los datos de la version o None si falla.
     """
+    # 1. Intentar /releases/latest
     try:
         r = requests.get(GITHUB_API_URL, timeout=8)
-        r.raise_for_status()
-        return r.json()
+        if r.status_code == 200:
+            return r.json()
     except Exception as exc:
-        log.debug("No se pudo consultar GitHub: %s", exc)
-        return None
+        log.debug("No se pudo consultar releases/latest: %s", exc)
+
+    # 2. Fallback: consultar /tags
+    try:
+        r = requests.get(f"https://api.github.com/repos/{REPO}/tags", timeout=8)
+        if r.status_code == 200:
+            tags = r.json()
+            if tags and isinstance(tags, list) and len(tags) > 0:
+                latest_tag = tags[0]["name"]
+                return {
+                    "tag_name": latest_tag,
+                    "body": f"Nueva versión {latest_tag} disponible en el repositorio."
+                }
+    except Exception as exc:
+        log.debug("No se pudo consultar tags: %s", exc)
+
+    # 3. Fallback: consultar raw version.txt en main
+    try:
+        r = requests.get(f"https://raw.githubusercontent.com/{REPO}/main/version.txt", timeout=8)
+        if r.status_code == 200:
+            ver = r.text.strip()
+            if ver:
+                return {
+                    "tag_name": f"v{ver}",
+                    "body": f"Nueva versión v{ver} disponible."
+                }
+    except Exception as exc:
+        log.debug("No se pudo consultar raw version.txt: %s", exc)
+
+    return None
 
 
 def hay_nueva_version() -> tuple[bool, str, dict | None]:
